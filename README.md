@@ -1,4 +1,4 @@
-# Smart AI-Based Traffic Management using Multi-Agent Reinforcement Learning
+# MARL Driven Real-Time Traffic Management System
 
 An intelligent traffic optimization system that uses **Multi-Agent Reinforcement Learning (MARL)**, **LSTM traffic prediction**, and **SUMO simulation** to dynamically control urban traffic signals, reduce congestion, and improve traffic throughput.  
 Developed as a research-driven project focused on scalable smart city traffic control. :contentReference[oaicite:0]{index=0}
