@@ -1,3 +1,4 @@
+$content = @"
 # Core MARL traffic management
 numpy
 traci
@@ -10,3 +11,5 @@ pytest>=7.0.0
 
 # Optional: LSTM traffic prediction (if you re-enable that part)
 # tensorflow>=2.10.0
+"@
+[System.IO.File]::WriteAllText("$PWD\requirements.txt", $content, [System.Text.UTF8Encoding]::new($false))
