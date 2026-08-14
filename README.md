@@ -1,124 +1,126 @@
 # 🚦 MARL Traffic Intelligence
 
-### Multi-Agent Reinforcement Learning for Adaptive & Secure Urban Traffic Control
+### Multi-Agent Learning for Adaptive and Secure Urban Traffic Control
 
-> A simulation-driven intelligent transportation system combining multi-agent traffic-signal control, predictive traffic modelling, SUMO/TraCI, and cryptographically secured agent communication.
+A simulation-based traffic management system combining **multi-agent adaptive signal control, LSTM traffic-demand prediction, SUMO/TraCI, emergency-vehicle prioritization, and cryptographically secured agent communication**.
+
+The project explores two connected engineering problems:
+
+1. Can decentralized traffic-signal agents reduce congestion compared with rule-based control?
+2. How can communication between those agents be protected against spoofing, replay, tampering, and impersonation?
 
 ---
 
-## Overview
+## 📊 Results at a Glance
 
-Urban traffic signals are typically controlled using fixed schedules or predefined rules that react poorly to rapidly changing traffic conditions.
+Evaluated against the project's rule-based traffic-control baseline in simulation:
 
-**MARL Traffic Intelligence** explores a different approach: model each traffic intersection as an autonomous decision-making agent capable of observing local traffic conditions and adapting its signal phase in response.
+| Metric | Baseline | Adaptive System | Improvement |
+|---|---:|---:|---:|
+| Average waiting time | 55 s | 32 s | **↓ 41.8%** |
+| Queue length | 30 vehicles | 15 vehicles | **↓ 50.0%** |
+| Fuel consumption | 120 L | 90 L | **↓ 25.0%** |
+| Traffic throughput | 65% | 82% | **↑ 17 pp** |
 
-The system integrates:
+Security validation:
 
-- 🚦 **Multi-Agent Reinforcement Learning** for adaptive signal control
-- 📈 **LSTM-based traffic prediction** for dynamic traffic-demand modelling
-- 🏙️ **SUMO + TraCI** for microscopic traffic simulation and real-time control
-- 🚑 **Emergency vehicle prioritization**
-- 🔐 **TLS 1.3, PKI and signed messages** for secure inter-agent communication
-- 🧪 **Adversarial security testing** against six attack scenarios
+- **17 automated security tests**
+- **6 simulated attack classes blocked**
+- **TLS 1.3 mutual authentication**
+- **X.509 agent identities**
+- **RSA-PSS signed messages**
+- **Nonce + timestamp replay protection**
 
-The project combines **AI systems, graph-like multi-agent coordination, simulation, cybersecurity, and intelligent transportation infrastructure** in a reproducible research environment.
+> Results above are from SUMO-based simulation experiments and are not real-world municipal deployment measurements.
 
 ---
 
 ## 🎯 Problem
 
-Fixed-time traffic signals cannot respond effectively to changing traffic demand.
+Fixed-time traffic signals cannot respond effectively to rapidly changing traffic demand.
 
-During congestion, the same predetermined signal plan may remain active despite large differences in queue lengths between approaches. This can result in:
+A predetermined signal schedule may continue operating even when one approach is heavily congested and another is nearly empty, contributing to:
 
 - longer vehicle waiting times;
 - growing intersection queues;
-- reduced traffic throughput;
+- reduced throughput;
 - unnecessary fuel consumption;
-- poor coordination between neighbouring intersections; and
-- delayed emergency vehicle movement.
+- delayed emergency vehicles; and
+- poor coordination between neighbouring intersections.
 
-The goal of this project is to investigate whether **decentralized learning agents can adapt traffic signals dynamically while communicating securely in a simulated smart-city environment.**
+This project models traffic intersections as autonomous agents that adapt signal decisions from observed traffic conditions while operating inside a simulated urban network.
 
 ---
 
-## 💡 System Design
-
-Each controlled intersection acts as an autonomous traffic-signal agent.
-
-The agent observes the traffic environment, evaluates congestion conditions, selects a signal action, receives a reward from the resulting traffic state, and continuously adapts its policy.
+## 🏗️ System Architecture
 
 ```text
-                         ┌──────────────────────┐
-                         │   Traffic Dataset    │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │   LSTM Prediction    │
-                         │ Traffic Flow / Demand│
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-┌───────────────────────────────────────────────────────────────┐
-│                       SUMO Environment                        │
-│                                                               │
-│   ┌──────────┐     ┌──────────┐     ┌──────────┐             │
-│   │ Agent J1 │◄───►│ Agent J2 │◄───►│ Agent J3 │             │
-│   └────┬─────┘     └────┬─────┘     └────┬─────┘             │
-│        │                │                │                    │
-│   Queue / Wait     Traffic Density   Emergency State          │
-│        │                │                │                    │
-│        └────────────────┼────────────────┘                    │
-│                         ▼                                     │
-│                Adaptive Signal Control                        │
-└─────────────────────────┬─────────────────────────────────────┘
-                          │
-                          ▼
-               ┌───────────────────────┐
-               │ Performance Metrics   │
-               │ Delay • Queue • Flow  │
-               └───────────────────────┘
+                     Historical Traffic Data
+                               │
+                               ▼
+                      ┌─────────────────┐
+                      │ LSTM Prediction │
+                      └────────┬────────┘
+                               │
+                        Predicted Demand
+                               │
+                               ▼
+┌──────────────────────────────────────────────────────────┐
+│                    SUMO Environment                       │
+│                                                          │
+│     ┌──────────┐       ┌──────────┐       ┌──────────┐   │
+│     │ Agent J1 │ ◄───► │ Agent J2 │ ◄───► │ Agent J3 │   │
+│     └────┬─────┘       └────┬─────┘       └────┬─────┘   │
+│          │                  │                   │          │
+│     Queue Length       Traffic Density     Emergency      │
+│     Waiting Time                           Vehicle State   │
+│          └──────────────────┬────────────────┘            │
+│                             ▼                             │
+│                   Adaptive Signal Control                 │
+└─────────────────────────────┬────────────────────────────┘
+                              │
+                              ▼
+                  Waiting • Queue • Throughput
 ```
 
-TraCI provides the control interface between Python agents and the running SUMO simulation.
+**SUMO** provides the microscopic traffic simulation, while **TraCI** gives the Python agents programmatic access to vehicle states and traffic-light controls.
 
 ---
 
 ## 🧠 Multi-Agent Traffic Control
 
-### State Space
+Each controlled intersection acts as an independent traffic-signal agent interacting with the shared SUMO environment.
 
-Each traffic-signal agent observes features including:
+### State
+
+Agents observe traffic features including:
 
 ```text
 Queue Length
-Vehicle Waiting Time
+Waiting Time
 Traffic Density
 Emergency Vehicle Presence
 ```
 
-### Action Space
+### Actions
 
-Agents dynamically select traffic-light phase changes based on the observed intersection state.
-
-Instead of executing a permanently fixed timing plan, signal decisions therefore respond to current traffic conditions.
+An agent selects traffic-light phase changes according to its current observed state rather than executing a permanently fixed timing schedule.
 
 ### Reward
 
-The reward penalizes congestion and accumulated waiting time.
+Congestion and accumulated waiting time are penalized:
 
 ```python
 reward = -(queue_length + 0.5 * waiting_time)
 ```
 
-This encourages agents to discover policies that reduce queues while preventing excessive vehicle delay.
+This gives agents an optimization signal favouring lower queues and reduced vehicle delay.
 
 ---
 
-## 📈 Traffic Prediction
+## 📈 Traffic-Demand Prediction
 
-An LSTM-based forecasting component models changing traffic demand and vehicle arrivals.
+The forecasting component uses an **LSTM** to model changing traffic demand.
 
 ```text
 Historical Traffic
@@ -133,91 +135,100 @@ Predicted Demand
 Vehicle Generation
        │
        ▼
-SUMO Simulation
+SUMO Environment
+       │
+       ▼
+Adaptive Agents
 ```
 
-Combining forecasting with adaptive control allows the simulation to represent traffic conditions that change over time rather than relying exclusively on static demand.
+Predicted demand can therefore influence simulated vehicle arrivals instead of restricting experiments to a single static traffic pattern.
 
 ---
 
 ## 🚑 Emergency Vehicle Priority
 
-Emergency vehicles introduce a second optimization objective: minimizing emergency delay without destabilizing surrounding traffic.
+Emergency vehicles introduce a second objective alongside general congestion reduction.
 
-When an authorized emergency vehicle is detected, the system can modify signal behaviour to facilitate clearance through the intersection.
+When an authorized emergency vehicle is detected, traffic-signal behaviour can be adapted to facilitate its movement through an intersection.
 
-Because blindly trusting an `"emergency": true` message would create a security vulnerability, emergency priority is integrated with the project's authentication layer.
+However, accepting an unauthenticated message such as:
+
+```json
+{
+  "emergency": true
+}
+```
+
+would allow a malicious participant to abuse signal priority.
+
+Emergency requests are therefore integrated with the project's cryptographic authentication mechanisms rather than being trusted solely from message content.
 
 ---
 
 # 🔐 Security Engineering
 
-Connected traffic infrastructure introduces a different class of problem.
+Traffic-control agents form a distributed system. Protecting the control algorithm alone is insufficient if another participant can forge messages, impersonate an intersection, replay old commands, or fraudulently request emergency priority.
 
-A traffic-control algorithm may perform correctly while still being unsafe if an attacker can impersonate another intersection, replay an old signal command, modify traffic data, or fraudulently request emergency priority.
-
-The project therefore implements a **defense-in-depth communication layer** around the traffic agents.
+The project therefore implements multiple defensive layers around inter-agent communication.
 
 ## Threat Model
 
-| Threat | Potential impact | Defense |
+| Threat | Risk | Implemented Defense |
 |---|---|---|
-| Man-in-the-Middle | Intercept or alter agent traffic | TLS 1.3 + mutual TLS |
+| MITM interception | Read or alter agent traffic | TLS 1.3 + mTLS |
 | Agent impersonation | Rogue controller joins network | X.509 certificates |
-| Message tampering | Modify signal commands | RSA-PSS signatures |
-| Replay attack | Reuse valid historical commands | Nonce + timestamp validation |
-| Message misrouting | Redirect legitimate commands | Signed message metadata |
-| Emergency spoofing | Fraudulent traffic priority | Cryptographic emergency authorization |
+| Message tampering | Modify legitimate commands | RSA-PSS signatures |
+| Replay attack | Reuse previously valid messages | Nonce + timestamp |
+| Message redirection | Misroute legitimate commands | Signed metadata |
+| Emergency spoofing | Fraudulent priority request | Cryptographic authorization |
 
 ---
 
-## 🛡️ Defense-in-Depth Architecture
+## 🛡️ Defense in Depth
 
 ```text
-┌──────────────────────────────────────────────────────────────┐
-│                    APPLICATION LAYER                         │
-│        Authenticated Emergency Vehicle Authorization         │
-├──────────────────────────────────────────────────────────────┤
-│                      MESSAGE LAYER                           │
-│       RSA-PSS • SHA-256 • Nonce • Timestamp Validation       │
-├──────────────────────────────────────────────────────────────┤
-│                      IDENTITY LAYER                          │
-│             X.509 PKI • Per-Agent Certificates               │
-├──────────────────────────────────────────────────────────────┤
-│                     TRANSPORT LAYER                          │
-│                 TLS 1.3 Mutual TLS                           │
-└──────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────┐
+│                 APPLICATION LAYER                   │
+│       Emergency Vehicle Authorization               │
+├─────────────────────────────────────────────────────┤
+│                    MESSAGE LAYER                    │
+│      RSA-PSS • SHA-256 • Nonce • Timestamp          │
+├─────────────────────────────────────────────────────┤
+│                    IDENTITY LAYER                   │
+│          X.509 PKI • Agent Certificates             │
+├─────────────────────────────────────────────────────┤
+│                   TRANSPORT LAYER                   │
+│                TLS 1.3 Mutual TLS                   │
+└─────────────────────────────────────────────────────┘
 ```
 
-### Security Components
+### Security Modules
 
 | Module | Responsibility |
 |---|---|
-| `crypto_utils.py` | RSA-2048, SHA-256 and RSA-PSS cryptographic primitives |
+| `crypto_utils.py` | RSA-2048, SHA-256 and RSA-PSS primitives |
 | `pki.py` | Certificate authority and per-agent X.509 certificates |
 | `secure_message.py` | Signed, timestamped and nonced message envelopes |
 | `secure_channel.py` | TLS 1.3 mutual-authentication channel |
-| `emergency_auth.py` | Emergency-vehicle authorization tokens |
+| `emergency_auth.py` | Emergency-vehicle authorization |
 | `secure_agent.py` | Security integration with traffic agents |
-| `attack_simulator.py` | Adversarial security scenarios |
+| `attack_simulator.py` | Executable adversarial scenarios |
 
-See [`SECURITY.md`](./SECURITY.md) for the STRIDE threat model and detailed security design.
+For the detailed threat model and security architecture, see [`SECURITY.md`](./SECURITY.md).
 
 ---
 
 ## ⚔️ Adversarial Validation
 
-The security layer is not documented only as an architectural proposal.
+The security architecture is backed by executable tests rather than documentation alone.
 
-The repository contains automated tests and attack simulations that exercise the implemented defenses.
-
-### Security Test Suite
+### Automated Security Tests
 
 ```bash
 python -m pytest -v tests/test_security.py
 ```
 
-**17 security tests** validate properties including authentication, message integrity, replay protection and emergency authorization.
+**17 tests** exercise authentication, integrity validation, replay protection, certificate handling, and emergency authorization.
 
 ### Attack Simulation
 
@@ -225,10 +236,10 @@ python -m pytest -v tests/test_security.py
 python demo.py
 ```
 
-The simulation exercises six adversarial scenarios:
+Six adversarial scenarios are exercised:
 
-| Attack | Expected result |
-|---|---|
+| Attack | Result |
+|---|:---:|
 | Message tampering | 🛡️ Blocked |
 | Agent impersonation | 🛡️ Blocked |
 | Replay attack | 🛡️ Blocked |
@@ -242,95 +253,40 @@ The simulation exercises six adversarial scenarios:
 python tls_smoke_test.py
 ```
 
-This verifies the live TLS 1.3 mutual-authentication path between simulated traffic-system participants.
+The smoke test validates the TLS 1.3 mutual-authentication path between simulated traffic-system participants.
 
 ---
 
-# 📊 Simulation Results
+# 📊 Simulation Evaluation
 
-The simulation study compared adaptive traffic control against the project's rule-based baseline.
+The adaptive system was compared with the project's rule-based traffic-control baseline.
 
-| Metric | Baseline | MARL System | Change |
+| Metric | Rule-Based | Adaptive System | Change |
 |---|---:|---:|---:|
-| Average waiting time | 55 s | 32 s | ↓ 41.8% |
-| Queue length | 30 vehicles | 15 vehicles | ↓ 50.0% |
-| Fuel consumption | 120 L | 90 L | ↓ 25.0% |
-| Traffic throughput | 65% | 82% | ↑ 17 percentage points |
+| Average waiting time | 55 s | 32 s | **↓ 41.8%** |
+| Queue length | 30 vehicles | 15 vehicles | **↓ 50.0%** |
+| Fuel consumption | 120 L | 90 L | **↓ 25.0%** |
+| Traffic throughput | 65% | 82% | **↑ 17 percentage points** |
 
-These values are derived from the project's simulation study and should be interpreted as **simulation results rather than real-world deployment measurements**.
+The measurements were obtained from the project's simulation study.
 
-The results suggest that adaptive control can substantially improve traffic flow under the evaluated simulation conditions.
-
----
-
-# 🧪 Reproducing the Project
-
-## Prerequisites
-
-- Python
-- SUMO
-- TraCI
-- NumPy
-- Cryptography
-- Pytest
-
-Install the Python dependencies:
-
-```bash
-pip install numpy traci cryptography pytest
-```
-
-SUMO must also be installed and available to the simulation environment.
-
-## Run Traffic Simulation
-
-```bash
-python run_marl_agent.py
-```
-
-## Run Secure Traffic Simulation
-
-Generate the PKI material once:
-
-```bash
-python generate_keys.py --agents J1 J2 J3 J4
-```
-
-Then start the security-enabled simulation:
-
-```bash
-python run_secure_marl_agent.py
-```
-
-## Generate Performance Results
-
-```bash
-python csv_gen.py
-```
-
-## Validate Security
-
-```bash
-python -m pytest -v tests/test_security.py
-python demo.py
-python tls_smoke_test.py
-```
+They demonstrate the behaviour of the system under the evaluated SUMO configuration and should not be interpreted as expected performance on a real road network.
 
 ---
 
-# 🛠️ Technology
+# 🛠️ Technology Stack
 
 | Area | Technologies |
 |---|---|
 | Traffic Simulation | SUMO, TraCI |
-| Intelligent Control | Multi-Agent Reinforcement Learning |
+| Adaptive Control | Multi-Agent Learning |
 | Traffic Forecasting | LSTM, TensorFlow/Keras |
-| Core Engineering | Python, NumPy |
+| Core Development | Python, NumPy |
 | Cryptography | RSA-2048, RSA-PSS, SHA-256 |
 | Identity | X.509 PKI |
-| Transport Security | TLS 1.3 / mTLS |
+| Transport Security | TLS 1.3, mTLS |
 | Testing | Pytest |
-| Analysis | CSV-based simulation metrics |
+| Evaluation | CSV-based simulation metrics |
 
 ---
 
@@ -369,51 +325,110 @@ python tls_smoke_test.py
 
 ---
 
-# 🔬 Engineering Contributions
+# 🚀 Running the Project
 
-The project explores several engineering problems within one system:
+## Prerequisites
+
+- Python
+- SUMO
+- TraCI
+- NumPy
+- Cryptography
+- Pytest
+
+Install the Python dependencies:
+
+```bash
+pip install numpy traci cryptography pytest
+```
+
+SUMO must also be installed and available to the simulation environment.
+
+### Run Traffic Simulation
+
+```bash
+python run_marl_agent.py
+```
+
+### Run the Security-Enabled Simulation
+
+Generate agent PKI material:
+
+```bash
+python generate_keys.py --agents J1 J2 J3 J4
+```
+
+Then run:
+
+```bash
+python run_secure_marl_agent.py
+```
+
+### Generate Evaluation Data
+
+```bash
+python csv_gen.py
+```
+
+### Validate the Security Layer
+
+```bash
+python -m pytest -v tests/test_security.py
+python demo.py
+python tls_smoke_test.py
+```
+
+---
+
+# 🔬 Engineering Focus
 
 ### Multi-Agent Decision Making
-Models intersections as independent agents operating within a shared traffic environment.
 
-### Adaptive Traffic Control
-Changes signal behaviour according to measured traffic conditions rather than relying exclusively on fixed schedules.
+Models intersections as independent decision-making agents operating within a shared traffic environment.
 
-### Predictive Traffic Modelling
-Uses temporal traffic prediction to represent changing demand within the simulation.
+### Adaptive Signal Control
 
-### Emergency-Aware Optimization
-Introduces priority handling for emergency vehicles alongside general congestion objectives.
+Adjusts traffic-light behaviour from observed traffic conditions rather than relying exclusively on fixed schedules.
 
-### Secure Distributed Agents
-Protects inter-agent communication through authenticated identities, encrypted transport and signed messages.
+### Temporal Traffic Modelling
+
+Uses LSTM-based forecasting to represent changing traffic demand in simulation.
+
+### Emergency-Aware Control
+
+Incorporates emergency-vehicle priority alongside general congestion objectives.
+
+### Secure Agent Communication
+
+Combines authenticated identities, encrypted transport, signed messages, and replay protection for inter-agent communication.
 
 ### Adversarial Testing
-Validates security assumptions using executable attack scenarios instead of relying exclusively on documentation.
+
+Exercises security assumptions through executable attack scenarios covering tampering, replay, impersonation, MITM behaviour, and emergency-priority abuse.
 
 ---
 
 # 🚀 Future Work
 
-- Real-world traffic sensor integration
-- Camera-based vehicle detection
-- Larger multi-intersection MARL experiments
-- Federated training across traffic regions
-- Edge deployment of intersection agents
-- Adaptive route recommendation
-- City-scale traffic-network evaluation
-- Formal comparison of independent vs. cooperative MARL policies
-- Post-quantum cryptographic migration
+- Evaluate larger multi-intersection networks
+- Compare independent and cooperative MARL policies
+- Integrate real-world traffic sensor data
+- Add camera-based vehicle detection
+- Explore federated training across traffic regions
+- Deploy intersection agents to edge devices
+- Investigate adaptive vehicle routing
+- Evaluate city-scale traffic networks
+- Explore post-quantum authentication mechanisms
 
 ---
 
-# ⚠️ Scope
+# ⚠️ Project Scope
 
 This repository is a **research and simulation project**.
 
-Performance measurements were produced in SUMO-based experiments and do not represent results from deployment on a real municipal transportation network.
+Traffic-performance measurements were obtained from SUMO experiments and do not represent deployment results from a real municipal transportation network.
 
-The cybersecurity components demonstrate defensive mechanisms in the simulated agent environment and are not presented as a certified production ITS security implementation.
+The security components demonstrate defensive mechanisms within the simulated multi-agent environment and are not presented as a certified production ITS security implementation.
 
 ---
 
@@ -425,6 +440,6 @@ Manipal University Jaipur
 
 ---
 
-### ⭐ If this project interests you
+### ⭐ Interested in the project?
 
-Explore the implementation, reproduce the simulations, review the security model, or open an issue with an improvement.
+Explore the implementation, reproduce the simulation experiments, review the security model, or open an issue with an improvement.
