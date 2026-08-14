@@ -440,4 +440,4 @@ The implemented security layer provides:
 - adversarial attack simulations; and
 - automated security validation.
 
-The goal is not merely to demonstrate an adaptive traffic controller, but to explore how **distributed AI agents can make decisions over data and communication channels that are explicitly authenticated and validated before being trusted**..
+The goal is not merely to demonstrate an adaptive traffic controller, but to explore how **distributed AI agents can make decisions over data and communication channels that are explicitly authenticated and validated before being trusted**.
