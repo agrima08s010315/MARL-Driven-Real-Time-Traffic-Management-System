@@ -557,8 +557,6 @@ The repository is intended to demonstrate engineering concepts involving:
 | 🧪 Security Tests        | [`tests/test_security.py`](./tests/test_security.py)                                                          |
 
 ---
-<div align="center">
-
 ## 👩‍💻 Author
 
 ### Agrima Saxena
