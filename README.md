@@ -559,12 +559,8 @@ The repository is intended to demonstrate engineering concepts involving:
 ---
 
 ## 👩‍💻 Author
-
 ### Agrima Saxena
-
 **Software Engineering · Applied AI · Secure Systems**
-
-<br><br>
 
 ### ⭐ Interested in the project?
 
