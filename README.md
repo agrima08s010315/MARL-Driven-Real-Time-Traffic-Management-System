@@ -557,13 +557,27 @@ The repository is intended to demonstrate engineering concepts involving:
 | 🧪 Security Tests        | [`tests/test_security.py`](./tests/test_security.py)                                                          |
 
 ---
+<div align="center">
 
 ## 👩‍💻 Author
+
 ### Agrima Saxena
+
 **Software Engineering · Applied AI · Secure Systems**
 
-### ⭐ Interested in the project?
+### Interested in the project?
 
-**Explore the implementation · reproduce the simulations · review the security architecture · run the attack tests · suggest an improvement**
+Explore the implementation · reproduce the simulation · review the security architecture · run the adversarial tests · contribute improvements
+
+<br>
+
+<a href="https://github.com/agrima08s010315/MARL-Driven-Real-Time-Traffic-Management-System">
+<img src="https://img.shields.io/badge/Explore-Repository-181717?style=flat-square&logo=github&logoColor=white"/>
+</a>
+
+<a href="./SECURITY.md">
+<img src="https://img.shields.io/badge/Read-Security%20Architecture-2563EB?style=flat-square&logo=securityscorecard&logoColor=white"/>
+</a>
 
 </div>
+
