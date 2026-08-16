@@ -1,149 +1,140 @@
-<div align="center">
-
 # 🔐 Security Architecture
 
-### Secure communication for the traffic-control agents
+### Secure communication for distributed traffic-control agents
 
-**TLS 1.3 · mTLS · X.509 · RSA-PSS · SHA-256 · Replay Protection**
+The MARL traffic-management project treats each intersection controller as a distributed software agent.
 
-</div>
+That means traffic decisions are not the only concern. A secure system also needs to verify **who sent a message, whether it was changed, whether it is fresh, and whether the sender is authorized to request a privileged action**.
 
-## Purpose
+The security layer uses:
 
-This document explains the security layer used by the traffic-management project.
+`TLS 1.3` `mTLS` `X.509` `RSA-PSS` `SHA-256` `Nonce Validation` `Timestamp Validation`
 
-The traffic controllers are treated as distributed software agents.
+## 🎯 Security Goals
 
-Even if the traffic-control algorithm behaves correctly, the overall system can still fail if another process can impersonate an intersection, alter a command, replay an old message or request emergency priority without authorization.
+The design focuses on the following properties:
 
-The security implementation is mainly located in the [`security/`](./security/) directory.
+| Goal | Implementation |
+|---|---|
+| Agent authentication | X.509 certificates issued by a trusted CA |
+| Confidentiality | TLS 1.3 |
+| Mutual authentication | mTLS |
+| Message authenticity | RSA-PSS signatures |
+| Message integrity | SHA-256 + signature verification |
+| Replay resistance | timestamps + nonce tracking |
+| Receiver validation | receiver identity included in protected metadata |
+| Emergency authorization | signed authorization token |
 
-The current design focuses on:
+The goal is simple:
 
-* agent identity
-* communication confidentiality
-* message integrity
-* message authenticity
-* replay resistance
-* receiver validation
-* emergency vehicle authorization
+> A traffic controller should not trust a network message until the sender, receiver, freshness, integrity, and authorization have been checked.
 
-## Security Model
+## 🧩 Security Model
 
-Incoming network messages are not treated as trusted automatically.
+Incoming network data is treated as untrusted.
 
-Before a network-sourced message can influence a traffic controller, it passes through a sequence of checks.
+Before a network message can influence the traffic controller, it passes through a validation pipeline.
 
 ```text
-Network message
-     |
-     v
-Transport authentication
-     |
-     v
-Sender and receiver validation
-     |
-     v
-Timestamp and nonce checks
-     |
-     v
-Signature verification
-     |
-     v
-Payload integrity check
-     |
-     v
-Trusted message
-     |
-     v
-Traffic-control logic
+Incoming Network Message
+          |
+          v
+Transport Authentication
+          |
+          v
+Sender / Receiver Validation
+          |
+          v
+Timestamp Check
+          |
+          v
+Nonce Check
+          |
+          v
+Signature Verification
+          |
+          v
+Payload Integrity Check
+          |
+          v
+Validated Message
+          |
+          v
+Traffic-Control Logic
 ```
 
 This keeps the security decision separate from the traffic-control decision.
 
-## Security Goals
+## 🛡️ Threat Model
 
-| Goal                    | Implementation                                   |
-| ----------------------- | ------------------------------------------------ |
-| Agent authentication    | X.509 certificates and trusted CA                |
-| Confidentiality         | TLS 1.3                                          |
-| Mutual authentication   | mTLS                                             |
-| Message authenticity    | RSA-PSS signatures                               |
-| Message integrity       | SHA-256 and signature verification               |
-| Replay resistance       | timestamps and nonce tracking                    |
-| Emergency authorization | signed authorization token                       |
-| Receiver binding        | receiver identity included in protected metadata |
+The project uses STRIDE to organize the main threats considered.
 
-## Threat Model
+| Threat | Example | Mitigation |
+|---|---|---|
+| Spoofing | Attacker pretends to be intersection J2 | X.509 identity + signature validation |
+| Tampering | Signal command is changed | RSA-PSS + SHA-256 |
+| Repudiation | Sender disputes issuing a message | signed sender metadata |
+| Information disclosure | Network traffic is observed | TLS 1.3 |
+| Denial of service | Repeated fake priority requests | authentication + authorization checks |
+| Elevation of privilege | Normal vehicle claims emergency status | signed emergency authorization token |
 
-STRIDE is used to organize the main threats considered by the project.
+The application can reject unauthorized requests, but it does not claim to prevent large volumetric network attacks.
 
-| STRIDE Area            | Example                                      | Mitigation                              |
-| ---------------------- | -------------------------------------------- | --------------------------------------- |
-| Spoofing               | Attacker claims to be intersection J2        | X.509 identity and signature validation |
-| Tampering              | Signal command is changed                    | RSA-PSS and SHA-256                     |
-| Repudiation            | Sender disputes issuing a message            | signed sender metadata                  |
-| Information disclosure | Network traffic is observed                  | TLS 1.3                                 |
-| Denial of service      | Fake priority requests are sent repeatedly   | authentication and authorization checks |
-| Elevation of privilege | Normal vehicle requests emergency privileges | signed emergency authorization          |
+## 🏗️ Security Layers
 
-The DoS protection here is limited to rejecting unauthorized traffic. Large volumetric network attacks are outside the scope of this simulation.
-
-## Security Layers
-
-The project uses several controls because each one protects a different part of the communication path.
+The design uses several controls because no single mechanism solves every problem.
 
 ```text
-Application
-Emergency authorization
+Application Layer
+Emergency Authorization
 
-Message
+Message Layer
 RSA-PSS
 SHA-256
 Timestamp
 Nonce
-Sender / receiver binding
+Sender / Receiver Binding
 
-Identity
-X.509 certificates
-Trusted certificate authority
+Identity Layer
+X.509 Certificates
+Trusted Certificate Authority
 
-Transport
+Transport Layer
 TLS 1.3
 Mutual TLS
 ```
 
-### Transport
+### Transport Security
 
-TLS 1.3 encrypts traffic between participating agents.
+TLS 1.3 encrypts communication between participating traffic agents.
 
 Mutual TLS requires both endpoints to authenticate.
 
-### Identity
+### Agent Identity
 
 Each traffic agent receives an X.509 certificate issued by the simulated traffic authority.
 
-### Message protection
+### Message Protection
 
-Messages include metadata that allows the receiver to check the sender, intended receiver, freshness and integrity.
+Protected messages include the sender, receiver, timestamp, nonce, payload digest, and signature.
 
-### Application authorization
+### Application Authorization
 
-Emergency priority is treated as a privileged operation instead of a normal boolean field.
+Emergency priority is treated as a privileged operation and requires separate authorization.
 
-## Security Files
+## 📂 Security Components
 
-| File                           | Responsibility                                    |
-| ------------------------------ | ------------------------------------------------- |
-| `security/crypto_utils.py`     | key generation, hashing, signing and verification |
-| `security/pki.py`              | certificate authority and agent certificates      |
-| `security/secure_message.py`   | protected message format                          |
-| `security/secure_channel.py`   | TLS communication                                 |
-| `security/emergency_auth.py`   | emergency authorization                           |
-| `security/secure_agent.py`     | traffic-agent security integration                |
-| `security/attack_simulator.py` | attack demonstrations                             |
+| File | Responsibility |
+|---|---|
+| `security/crypto_utils.py` | key generation, hashing, signing and verification |
+| `security/pki.py` | certificate authority and X.509 agent certificates |
+| `security/secure_message.py` | protected message format |
+| `security/secure_channel.py` | TLS communication |
+| `security/emergency_auth.py` | emergency authorization |
+| `security/secure_agent.py` | security integration with traffic agents |
+| `security/attack_simulator.py` | adversarial scenarios |
 
-## Protected Message Format
+## ✉️ Protected Message Format
 
 A protected message contains information about the sender, receiver, payload and freshness.
 
@@ -164,77 +155,90 @@ Example:
 }
 ```
 
-The implementation can be inspected in [`security/secure_message.py`](./security/secure_message.py).
+The implementation can be reviewed in:
 
-## Message Validation
+[`security/secure_message.py`](./security/secure_message.py)
 
-The receiving agent performs the checks in a defined sequence.
+## ✅ Message Validation
 
-### 1. Receiver validation
+The receiving agent performs the checks in a defined order.
 
-The message must be addressed to the local agent.
+### 1. Receiver Validation
 
-### 2. Sender trust
+The message must be intended for the local agent.
 
-The sender must correspond to a trusted participant.
+### 2. Sender Trust
 
-### 3. Timestamp validation
+The sender must correspond to a recognized participant.
+
+### 3. Timestamp Validation
 
 Messages outside the accepted freshness window are rejected.
 
-### 4. Nonce validation
+### 4. Nonce Validation
 
 A nonce that has already been accepted cannot be reused.
 
-### 5. Signature verification
+### 5. Signature Verification
 
-The RSA-PSS signature is verified using the sender public key.
+The RSA-PSS signature is verified using the sender's public key.
 
-### 6. Payload integrity
+### 6. Payload Integrity
 
-The payload digest is recomputed and compared with the protected value.
+The payload digest is recomputed and checked against the protected value.
 
 ```text
-Incoming message
+Incoming Message
       |
       v
-Correct receiver?
-  no -> reject
-  yes
+Correct Receiver?
+   no -> Reject
+   yes
       |
       v
-Trusted sender?
-  no -> reject
-  yes
+Trusted Sender?
+   no -> Reject
+   yes
       |
       v
-Fresh timestamp?
-  no -> reject
-  yes
+Fresh Timestamp?
+   no -> Reject
+   yes
       |
       v
-Nonce already used?
-  yes -> reject
-  no
+Nonce Already Used?
+   yes -> Reject
+   no
       |
       v
-Signature valid?
-  no -> reject
-  yes
+Signature Valid?
+   no -> Reject
+   yes
       |
       v
-Payload valid?
-  no -> reject
-  yes -> accept
+Payload Valid?
+   no -> Reject
+   yes
+      |
+      v
+Accept Message
 ```
 
-## Emergency Vehicle Authorization
+## 🚑 Emergency Vehicle Authorization
 
-Emergency priority is treated separately from ordinary traffic information.
+Emergency priority is handled separately from ordinary traffic information.
 
-A request is not trusted simply because it claims emergency status.
+A controller does not trust a request simply because it contains:
 
-The authorization token contains information such as:
+```json
+{
+  "emergency": true
+}
+```
+
+That would make emergency priority trivial to spoof.
+
+Instead, the simulated authorization token contains information such as:
 
 ```text
 vehicle_id
@@ -256,59 +260,56 @@ Example:
 }
 ```
 
-A traffic controller checks:
+The controller checks:
 
-* whether the vehicle ID matches the requester
-* whether the token is still valid
-* whether the token has expired
-* whether the dispatch signature is valid
-* whether the token was modified
+- whether the vehicle ID matches the requester
+- whether the token is within its validity period
+- whether the token has expired
+- whether the dispatch-authority signature is valid
+- whether the token has been modified
 
-This prevents a message such as:
+Only after these checks can the request be treated as authorized emergency traffic.
 
-```json
-{
-  "emergency": true
-}
-```
+## 🪪 PKI and Agent Identity
 
-from being treated as sufficient proof of emergency status.
-
-## PKI
-
-The project uses a small public-key infrastructure for the simulation.
+The simulation uses a small certificate hierarchy.
 
 ```text
 Traffic Authority CA
        |
-       +---- J1 certificate
+       +---- J1 Certificate
        |
-       +---- J2 certificate
+       +---- J2 Certificate
        |
-       +---- J3 certificate
+       +---- J3 Certificate
        |
-       +---- J4 certificate
+       +---- J4 Certificate
 ```
 
 The traffic authority acts as the trust anchor.
 
-A certificate signed by an unrelated CA should not be accepted as a valid traffic-controller identity.
+A certificate issued by an unrelated CA should not be accepted as a trusted controller identity.
 
-## Key Material
+## 🔑 Key Material
 
-| Credential                      | Used By                      | Simulation Storage         |
-| ------------------------------- | ---------------------------- | -------------------------- |
-| CA private key                  | traffic authority            | `keys/ca_key.pem`          |
-| Agent private key               | individual controller        | local agent files          |
-| Agent certificate               | traffic agents               | CA-signed certificate      |
-| Emergency authority private key | simulated dispatch authority | dispatch-side storage      |
-| Emergency public key            | traffic agents               | provisioned trust material |
+| Credential | Used By | Simulation Storage |
+|---|---|---|
+| CA private key | traffic authority | `keys/ca_key.pem` |
+| Agent private key | individual controller | local agent files |
+| Agent certificate | traffic agent | CA-signed certificate |
+| Emergency authority private key | simulated dispatch authority | dispatch-side storage |
+| Emergency authority public key | traffic agents | provisioned trust material |
 
 Private keys should not be committed to the repository.
 
-A production implementation would require stronger key protection, for example HSMs, TPM-backed storage or another managed key system.
+A production deployment would require stronger key protection such as:
 
-## Security Tests
+- HSMs
+- TPM-backed keys
+- secure enclaves
+- managed secret systems
+
+## 🧪 Security Tests
 
 Run:
 
@@ -318,24 +319,26 @@ python -m pytest -v tests/test_security.py
 
 The current suite contains **17 security-focused tests**.
 
-Examples include:
+Coverage includes:
 
-| Scenario                       | Security Control                 |
-| ------------------------------ | -------------------------------- |
-| Modified payload               | RSA-PSS validation               |
-| Impersonated sender            | certificate and signature checks |
-| Certificate from another CA    | trust validation                 |
-| Replayed message               | nonce tracking                   |
-| Old message                    | timestamp freshness              |
-| Receiver changed               | protected receiver identity      |
-| Fake emergency request         | emergency authorization          |
-| Forged token                   | dispatch signature validation    |
-| Token used for another vehicle | vehicle-ID binding               |
-| Expired token                  | validity window                  |
+| Scenario | Security Control |
+|---|---|
+| Modified payload | RSA-PSS validation |
+| Impersonated sender | certificate + signature checks |
+| Certificate from another CA | trust validation |
+| Replayed message | nonce tracking |
+| Old message | timestamp freshness |
+| Receiver changed | protected receiver identity |
+| Fake emergency request | emergency authorization |
+| Forged token | dispatch signature validation |
+| Token used by another vehicle | vehicle-ID binding |
+| Expired token | token validity window |
 
-The exact implementation can be reviewed in [`tests/test_security.py`](./tests/test_security.py).
+The exact tests can be reviewed in:
 
-## Attack Simulation
+[`tests/test_security.py`](./tests/test_security.py)
+
+## ⚔️ Attack Simulation
 
 Run:
 
@@ -343,7 +346,7 @@ Run:
 python demo.py
 ```
 
-The demo covers six attack categories:
+The demo exercises six attack categories:
 
 ```text
 message tampering
@@ -354,127 +357,142 @@ emergency spoofing
 forged authorization token
 ```
 
-The expected result is that each attempt is rejected by the corresponding control.
+The expected result is that each attempt is rejected by the relevant control.
 
-## TLS Test
+## 🔒 TLS Test
 
-The TLS path can be tested separately with:
+The TLS path can be tested separately.
 
 ```bash
 python tls_smoke_test.py
 ```
 
-This verifies mutual authentication without requiring the entire traffic simulation to run.
+This verifies mutual authentication without requiring the complete traffic simulation.
 
-## Why Use Both TLS and Signatures?
+## 🔍 Why Use Both TLS and Signatures?
 
-TLS protects a connection between two endpoints.
+TLS protects the communication channel between two endpoints.
 
 Application-level signatures protect individual messages.
 
-Using both means the implementation does not depend on one mechanism for every property.
+Using both provides two different guarantees:
+
+- TLS protects data in transit
+- signatures preserve message-level authenticity and integrity
 
 A signed message still carries verifiable sender and integrity information after it reaches the application layer.
 
-## Interaction With the Traffic Controller
+## 🧠 Interaction With the Traffic Controller
 
-Security validation happens before network-sourced data is treated as trusted input.
+Security checks happen before external network data is treated as trusted input.
 
 ```text
-Incoming data
+Incoming Data
      |
      v
-Security checks
+Security Validation
      |
      v
-Validated input
+Trusted Input
      |
      v
-Traffic controller
+Traffic Controller
      |
      v
-Signal decision
+Signal Decision
      |
      v
-Protected outgoing message
+Protected Outgoing Message
 ```
 
-The traffic controller decides what action to take.
+The traffic controller decides **what action should be taken**.
 
-The security layer decides whether external information is trustworthy enough to be used.
+The security layer decides **whether external information should be trusted**.
 
-## Cryptographic Performance
+Keeping those responsibilities separate makes the system easier to reason about and test.
 
-Cryptographic operations add some overhead.
+## ⚡ Cryptographic Performance
 
-The implementation currently uses RSA-2048 with RSA-PSS signatures.
+Cryptographic operations introduce computational overhead.
 
-For this project, cryptographic functions are isolated in their own utilities so they can be replaced without rewriting the traffic-control logic.
+The current implementation uses:
 
-Possible alternatives for future experiments include:
+- RSA-2048
+- RSA-PSS
+- SHA-256
 
-* Ed25519
-* hardware-backed signing
-* asynchronous verification
-* session-level message authentication
+The cryptographic code is isolated in utility modules so the implementation can be changed without rewriting the traffic-control logic.
 
-The project does not claim a specific cryptographic latency because that depends on the target hardware and deployment environment.
+Possible future alternatives include:
 
-## Limitations
+- Ed25519
+- hardware-backed signing
+- asynchronous verification
+- session-level authenticated messaging
+
+No fixed cryptographic latency is claimed because actual performance depends on hardware and deployment conditions.
+
+## ⚠️ Limitations
 
 This is a research and simulation project, not a production ITS security system.
 
-### Compromised controller
+### Compromised Controller
 
-If an attacker obtains the private key of a legitimate controller, normal certificate authentication cannot distinguish the attacker from that controller.
+If an attacker steals the private key of a legitimate controller, certificate authentication alone cannot distinguish the attacker from the compromised controller.
 
-Possible future mitigations include:
+Possible mitigations include:
 
-* hardware-backed keys
-* remote attestation
-* behavioural monitoring
+- hardware-backed keys
+- secure enclaves
+- remote attestation
+- behavioural monitoring
 
-### Large-scale DoS
+### Large-Scale DoS
 
-The application can reject unauthorized messages, but it cannot stop a large network flood before those messages reach the application.
+The application can reject unauthorized messages, but it cannot prevent a large network flood before those messages reach the application.
 
-### Certificate revocation
+### Certificate Revocation
 
-The simulation uses CA-based trust but does not implement a complete production revocation service.
+The simulation uses CA-based trust but does not implement a full production certificate-revocation system.
 
-### Endpoint security
+### Endpoint Security
 
-Secure boot, firmware protection, operating-system hardening and physical controller security are outside the current scope.
+The project does not currently model:
 
-### Side-channel attacks
+- secure boot
+- firmware integrity
+- operating-system hardening
+- physical controller security
 
-Timing attacks, power analysis and other hardware side channels are not modelled.
+### Side-Channel Attacks
 
-### Post-quantum cryptography
+Timing attacks, power analysis and other hardware side channels are outside the scope of the simulation.
+
+### Post-Quantum Security
 
 RSA-2048 is not post-quantum secure.
 
-No post-quantum security claim is made by this project.
+The repository does not claim post-quantum protection.
 
-## Future Work
+## 🔭 Future Work
 
-Possible improvements include:
+Possible security extensions include:
 
-* certificate rotation
-* certificate revocation
-* hardware-backed private keys
-* controller attestation
-* security event logging
-* rate limiting
-* network-level DoS mitigation
-* Byzantine-agent detection
-* anomaly detection
-* secure federated learning
-* model-poisoning detection
-* SIEM integration
-* post-quantum signature experiments
+- certificate rotation
+- certificate revocation
+- hardware-backed private keys
+- controller attestation
+- security event telemetry
+- rate limiting
+- network-level DoS mitigation
+- Byzantine-agent detection
+- anomaly detection
+- secure federated learning
+- model-poisoning detection
+- SIEM integration
+- post-quantum signature experiments
 
-## Security Files
+## 📁 Security Files
 
 ```text
 security/
@@ -494,42 +512,41 @@ demo.py
 tls_smoke_test.py
 ```
 
-## Summary
+## 📌 What This Security Layer Demonstrates
 
-The security layer answers a practical question:
+The security implementation focuses on a practical distributed-systems question:
 
-**Before one traffic controller trusts another controller's message, what should it verify?**
+> Before one traffic controller trusts another controller's message, what should it verify?
 
 In this project, that verification includes:
 
-* transport security
-* sender identity
-* intended receiver
-* message integrity
-* timestamp freshness
-* nonce reuse
-* emergency authorization
+- transport security
+- sender identity
+- intended receiver
+- message authenticity
+- message integrity
+- timestamp freshness
+- nonce reuse
+- emergency authorization
 
 The main implemented controls are:
 
-* TLS 1.3
-* mutual authentication
-* X.509 certificates
-* RSA-PSS signatures
-* SHA-256 validation
-* nonce-based replay prevention
-* timestamp checks
-* emergency authorization tokens
-* automated security tests
-* adversarial simulations
+- TLS 1.3
+- mutual authentication
+- X.509 certificates
+- RSA-PSS signatures
+- SHA-256 integrity validation
+- timestamp validation
+- nonce-based replay protection
+- emergency authorization tokens
+- automated security tests
+- adversarial attack simulations
 
-<div align="center">
+## 📚 Related Resources
 
-### Related
-
-[Main README](./README.md) ·
-[Security Tests](./tests/test_security.py) ·
-[Repository](https://github.com/agrima08s010315/MARL-Driven-Real-Time-Traffic-Management-System) ·
-[Patent](https://drive.google.com/file/d/1QSSDN_fmPc41MEugw1atImfDk9ymtrHb/view?usp=sharing)
-
-</div>
+| Resource | Link |
+|---|---|
+| Main Project README | [`README.md`](./README.md) |
+| Security Tests | [`tests/test_security.py`](./tests/test_security.py) |
+| Repository | [GitHub](https://github.com/agrima08s010315/MARL-Driven-Real-Time-Traffic-Management-System) |
+| Patent | [View Patent](https://drive.google.com/file/d/1QSSDN_fmPc41MEugw1atImfDk9ymtrHb/view?usp=sharing) |
