@@ -558,25 +558,11 @@ The repository is intended to demonstrate engineering concepts involving:
 
 ---
 
-<div align="center">
-
 ## 👩‍💻 Author
 
 ### Agrima Saxena
 
 **Software Engineering · Applied AI · Secure Systems**
-
-<a href="https://www.linkedin.com/in/agrima-saxena-142960426/">
-<img src="https://img.icons8.com/color/48/linkedin.png" width="34" height="34" alt="LinkedIn"/>
-</a>
-&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="mailto:agrimalc@gmail.com">
-<img src="https://img.icons8.com/color/48/gmail-new.png" width="34" height="34" alt="Gmail"/>
-</a>
-&nbsp;&nbsp;&nbsp;&nbsp;
-<a href="https://github.com/agrima08s010315">
-<img src="https://img.icons8.com/ios-glyphs/48/ffffff/github.png" width="34" height="34" alt="GitHub"/>
-</a>
 
 <br><br>
 
