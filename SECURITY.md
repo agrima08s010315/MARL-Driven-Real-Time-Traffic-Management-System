@@ -548,5 +548,5 @@ The main implemented controls are:
 |---|---|
 | Main Project README | [`README.md`](./README.md) |
 | Security Tests | [`tests/test_security.py`](./tests/test_security.py) |
-| Repository | [GitHub](https://github.com/agrima08s010315/MARL-Driven-Real-Time-Traffic-Management-System) |
+| Repository | [GitHub](https://github.com/agcodes0315/MARL-Driven-Real-Time-Traffic-Management-System) |
 | Patent | [View Patent](https://drive.google.com/file/d/1QSSDN_fmPc41MEugw1atImfDk9ymtrHb/view?usp=sharing) |
