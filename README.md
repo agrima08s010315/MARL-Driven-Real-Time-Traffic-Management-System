@@ -4,7 +4,7 @@
 
 A SUMO-based traffic management project combining **multi-agent adaptive signal control, LSTM-based demand forecasting, emergency vehicle prioritization and secure communication between traffic agents**.
 
-[![Repository](https://img.shields.io/badge/GitHub-Repository-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/agrima08s010315/MARL-Driven-Real-Time-Traffic-Management-System)
+[![Repository](https://img.shields.io/badge/GitHub-Repository-181717?style=flat-square&logo=github&logoColor=white)](https://github.com/agcodes0315/MARL-Driven-Real-Time-Traffic-Management-System)
 [![Patent](https://img.shields.io/badge/Patent-202511108091%20A-2563EB?style=flat-square&logo=googledrive&logoColor=white)](https://drive.google.com/file/d/1QSSDN_fmPc41MEugw1atImfDk9ymtrHb/view?usp=sharing)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=flat-square&logo=python&logoColor=white)
 ![Security Tests](https://img.shields.io/badge/Security%20Tests-17%20Passing-2EA44F?style=flat-square&logo=pytest&logoColor=white)
@@ -346,7 +346,7 @@ MARL-Driven-Real-Time-Traffic-Management-System/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/agrima08s010315/MARL-Driven-Real-Time-Traffic-Management-System.git
+git clone https://github.com/agcodes0315/MARL-Driven-Real-Time-Traffic-Management-System.git
 cd MARL-Driven-Real-Time-Traffic-Management-System
 ```
 
@@ -450,7 +450,7 @@ Current limitations include:
 
 | Resource | Link |
 |---|---|
-| Repository | [GitHub](https://github.com/agrima08s010315/MARL-Driven-Real-Time-Traffic-Management-System) |
+| Repository | [GitHub](https://github.com/agcodes0315/MARL-Driven-Real-Time-Traffic-Management-System) |
 | Patent | [View document](https://drive.google.com/file/d/1QSSDN_fmPc41MEugw1atImfDk9ymtrHb/view?usp=sharing) |
 | Security Documentation | [`SECURITY.md`](./SECURITY.md) |
 | Security Tests | [`tests/test_security.py`](./tests/test_security.py) |
@@ -483,7 +483,7 @@ Current limitations include:
 </td>
 
 <td width="60">
-<a href="https://github.com/agrima08s010315" title="GitHub">
+<a href="https://github.com/agcodes0315" title="GitHub">
 <img src="https://img.icons8.com/ios-glyphs/48/ffffff/github.png"
      width="32"
      height="32"
@@ -494,7 +494,7 @@ Current limitations include:
 </tr>
 </table>
 
-<a href="https://github.com/agrima08s010315/MARL-Driven-Real-Time-Traffic-Management-System">
+<a href="https://github.com/agcodes0315/MARL-Driven-Real-Time-Traffic-Management-System">
 <img src="https://img.shields.io/badge/GitHub-View%20Repository-181717?style=flat-square&logo=github&logoColor=white"
      alt="MARL Repository"/>
 </a>
